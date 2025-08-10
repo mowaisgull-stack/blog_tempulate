@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>System</title>
+<style>
+  :root{ --bg:#000; --g:#00ff66; }
+  html,body{ height:100%; margin:0; background:var(--bg); color:var(--g); font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; -webkit-user-select:none; user-select:none; }
+  .center{ height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; text-align:center; padding:20px; box-sizing:border-box; }
+  .msg{
+    font-size: clamp(20px, 5.6vw, 48px);
+    font-weight:800;
+    letter-spacing:0.6px;
+    line-height:1.02;
+    text-transform:none;
+    position:relative;
+  }
+  /* moving highlight */
+  .msg::before{
+    content: attr(data-text);
+    position:absolute; left:0; top:0; color:var(--g);
+    -webkit-background-clip:text; background-clip:text;
+    background: linear-gradient(90deg, rgba(0,255,102,0.08), rgba(0,255,102,0.28), rgba(0,255,102,0.08));
+    background-size: 300% 100%;
+    -webkit-text-fill-color: transparent;
+    animation: slide 3s linear infinite;
+    filter: drop-shadow(0 10px 30px rgba(0,255,102,0.08));
+  }
+  @keyframes slide{ 0%{ background-position:0% 50% } 50%{ background-position:100% 50% } 100%{ background-position:0% 50% } }
+
+  .sub{ color: rgba(0,255,102,0.6); font-size:14px; }
+  .btn{ margin-top:12px; padding:10px 14px; border-radius:10px; border:1px solid rgba(0,255,102,0.12); background:rgba(255,255,255,0.02); color:var(--g); cursor:pointer; font-weight:700; }
+  .small{ font-size:12px; color: rgba(0,255,102,0.12); position:fixed; bottom:12px; left:12px; right:12px; text-align:center; }
+
+  /* overlay & blackout */
+  #overlay{ display:none; position:fixed; inset:0; z-index:9998; align-items:center; justify-content:center; flex-direction:column; gap:12px; background:#000; }
+  .count{ font-size: clamp(48px, 14vw, 140px); font-weight:900; letter-spacing:1px; }
+  #black{ display:none; position:fixed; inset:0; background:#000; z-index:9999; }
+
+  /* reveal card */
+  #reveal{ display:none; position:fixed; inset:0; z-index:10000; align-items:center; justify-content:center; }
+  .card{ background: rgba(255,255,255,0.02); padding:22px; border-radius:12px; color:var(--g); text-align:center; max-width:420px; box-shadow: 0 14px 40px rgba(0,0,0,0.7); }
+  .card button{ margin-top:12px; padding:10px 14px; border-radius:10px; cursor:pointer; background:transparent; color:var(--g); border:1px solid rgba(0,255,102,0.08); font-weight:700; }
+
+  /* hide cursor during blackout to increase realism */
+  .hide-cursor *{ cursor:none !important; }
+</style>
+</head>
+<body>
+  <div class="center" id="main">
+    <div class="msg" data-text="your device successfully hacked By GullByte">your device successfully hacked By GullByte</div>
+    <div class="sub">(Harmless visual prank — no real shutdown)</div>
+    <button class="btn" id="start">View System Message</button>
+  </div>
+
+  <div id="overlay">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div class="count" id="cnt">3</div>
+      <div class="sub">Shutting down...</div>
+    </div>
+  </div>
+
+  <div id="black"></div>
+
+  <div id="reveal">
+    <div class="card">
+      <div style="font-size:20px;font-weight:900;">😂 Gotcha — GullByte</div>
+      <div style="margin-top:8px;color:rgba(0,255,102,0.6);">No shutdown performed. All safe.</div>
+      <button id="ok">All good</button>
+    </div>
+  </div>
+
+  <div class="small">Use responsibly. Do not prank people with health issues.</div>
+
+  <!-- small embedded power-off sound (replace data URI with your own short mp3 if you prefer) -->
+  <audio id="powerSound" preload="auto">
+    <!-- placeholder silent mp3 data URI (very small). Replace with an actual short "power-off" sound base64 if you want. -->
+    <source src="data:audio/mpeg;base64,//uQZAAAAAAAAAAAAAAAAAAAA" type="audio/mpeg">
+  </audio>
+
+<script>
+  const start = document.getElementById('start');
+  const overlay = document.getElementById('overlay');
+  const black = document.getElementById('black');
+  const reveal = document.getElementById('reveal');
+  const cnt = document.getElementById('cnt');
+  const main = document.getElementById('main');
+  const powerSound = document.getElementById('powerSound');
+
+  function tryFullscreen(){
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=>{});
+  }
+  function exitFullscreen(){
+    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    if (document.webkitFullscreenElement) document.webkitExitFullscreen && document.webkitExitFullscreen().catch(()=>{});
+  }
+
+  start.addEventListener('click', async ()=> {
+    // double confirm so it's not accidental
+    if (!confirm("This will show a full-screen 'shutdown' animation (harmless). Continue?")) return;
+
+    tryFullscreen();
+
+    // play short sound on user gesture (some browsers block autoplay without gesture)
+    try { powerSound.currentTime = 0; powerSound.play().catch(()=>{}); } catch(e){}
+
+    // begin countdown
+    main.style.display = 'none';
+    overlay.style.display = 'flex';
+    let count = 3;
+    cnt.textContent = count;
+    const t = setInterval(()=> {
+      count--;
+      if (count >= 0) cnt.textContent = count;
+      if (count <= 0) {
+        clearInterval(t);
+        overlay.style.display = 'none';
+        // simulate blackout
+        black.style.display = 'block';
+        document.body.classList.add('hide-cursor');
+        // vibrate (if allowed)
+        if (navigator.vibrate) { try { navigator.vibrate([200,100,200]); } catch(e){} }
+        // play power-off sound again at blackout (if available)
+        try { powerSound.currentTime = 0; powerSound.play().catch(()=>{}); } catch(e){}
+
+        // keep blackout for realistic duration then reveal
+        setTimeout(()=> {
+          black.style.display = 'none';
+          document.body.classList.remove('hide-cursor');
+          reveal.style.display = 'flex';
+          exitFullscreen();
+        }, 3000); // blackout length in ms — adjust if you want longer
+      }
+    }, 1000);
+  });
+
+  document.getElementById('ok').addEventListener('click', ()=> {
+    reveal.style.display = 'none';
+    main.style.display = 'flex';
+  });
+
+  // safety: Escape cancels everything
+  document.addEventListener('keydown', (e)=> {
+    if (e.key === 'Escape') {
+      overlay.style.display = 'none';
+      black.style.display = 'none';
+      reveal.style.display = 'none';
+      main.style.display = 'flex';
+      exitFullscreen();
+      document.body.classList.remove('hide-cursor');
+    }
+  });
+
+  // NOTE: This page only simulates a shutdown visually. It does NOT and CANNOT power off hardware or modify the device.
+</script>
+</body>
+</html>
